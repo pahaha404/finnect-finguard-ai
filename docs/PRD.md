@@ -20,7 +20,7 @@ Primary target users:
 Build an Android MVP that simulates the pre-transaction safety check:
 
 - Let the user select one risky financial scenario.
-- Show a human-style AI interviewer to make the flow feel like an interview, not a static checklist.
+- Show an animated human-style AI interviewer to make the flow feel like an interview, not a static checklist.
 - Explain the risk in plain Korean.
 - Capture basic transaction conditions such as amount, affordable repayment/loss, essential-money usage, and urgency.
 - Show a pre-interview risk detection panel based on those transaction conditions.
@@ -56,7 +56,8 @@ Build an Android MVP that simulates the pre-transaction safety check:
 ## Functional Requirements
 
 - Scenario cards for the four MVP scenarios.
-- Local human-style interviewer portrait in explanation, interview, and result screens.
+- Local animated human-style interviewer in explanation, interview, and result screens.
+- Interviewer animation includes speaking mouth movement, blinking, subtle eye movement, body motion, and hand gestures.
 - Scenario-specific explanations and interview questions.
 - Transaction-condition form before the interview.
 - Projected pressure estimate for repayment burden or 30% investment loss.

@@ -1,6 +1,12 @@
 package com.finnect.finguard.ui
 
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,19 +54,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.finnect.finguard.R
 import com.finnect.finguard.domain.RiskGrade
 import com.finnect.finguard.domain.RiskInterviewResult
 import com.finnect.finguard.domain.RiskScenario
 import com.finnect.finguard.domain.RiskTransactionEstimate
 import com.finnect.finguard.domain.toKoreanWon
+import kotlin.math.min
 
 @Composable
 fun FinGuardApp(viewModel: FinGuardViewModel = viewModel()) {
@@ -176,6 +188,241 @@ private fun FinGuardAppContent(
 }
 
 @Composable
+private fun AnimatedInterviewerAvatar(
+    modifier: Modifier = Modifier,
+    speaking: Boolean,
+    gesture: Boolean,
+) {
+    val transition = rememberInfiniteTransition(label = "interviewer-motion")
+    val mouth by transition.animateFloat(
+        initialValue = 0.18f,
+        targetValue = if (speaking) 1f else 0.22f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 920
+                0.18f at 0
+                0.92f at 110
+                0.36f at 210
+                1f at 330
+                0.22f at 470
+                0.74f at 640
+                0.18f at 920
+            },
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "mouth",
+    )
+    val blink by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 3600
+                0f at 0
+                0f at 2750
+                1f at 2820
+                0f at 2900
+                0f at 3600
+            },
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "blink",
+    )
+    val eyeShift by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2800),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "eye-shift",
+    )
+    val bodyMotion by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1900),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "body-motion",
+    )
+    val handMotion by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (gesture) 1f else 0.18f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1500
+                0.05f at 0
+                1f at 340
+                0.35f at 700
+                0.85f at 1040
+                0.05f at 1500
+            },
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "hand-motion",
+    )
+
+    Canvas(modifier = modifier.testTag("animated-interviewer-avatar")) {
+        val unit = min(size.width, size.height)
+        val left = (size.width - unit) / 2f
+        val top = (size.height - unit) / 2f
+        fun x(value: Float) = left + unit * value
+        fun y(value: Float) = top + unit * value
+        fun s(value: Float) = unit * value
+
+        val headBob = bodyMotion * s(0.018f)
+        val torsoSway = bodyMotion * s(0.012f)
+        val handLift = handMotion * s(0.055f)
+
+        drawCircle(
+            color = Color(0xFFD9EAE6),
+            radius = s(0.48f),
+            center = Offset(x(0.5f), y(0.5f)),
+        )
+        drawCircle(
+            color = Color(0xFFF7FAF9),
+            radius = s(0.41f),
+            center = Offset(x(0.5f), y(0.52f)),
+        )
+
+        drawRoundRect(
+            color = Color(0xFF263D3A),
+            topLeft = Offset(x(0.24f) + torsoSway, y(0.66f)),
+            size = Size(s(0.52f), s(0.33f)),
+            cornerRadius = CornerRadius(s(0.1f), s(0.1f)),
+        )
+        drawRoundRect(
+            color = Color.White,
+            topLeft = Offset(x(0.39f) + torsoSway, y(0.66f)),
+            size = Size(s(0.22f), s(0.31f)),
+            cornerRadius = CornerRadius(s(0.04f), s(0.04f)),
+        )
+        drawPath(
+            path = Path().apply {
+                moveTo(x(0.47f) + torsoSway, y(0.68f))
+                lineTo(x(0.53f) + torsoSway, y(0.68f))
+                lineTo(x(0.56f) + torsoSway, y(0.98f))
+                lineTo(x(0.44f) + torsoSway, y(0.98f))
+                close()
+            },
+            color = Color(0xFF0D6B65),
+        )
+
+        drawLine(
+            color = Color(0xFF263D3A),
+            start = Offset(x(0.76f) + torsoSway, y(0.72f)),
+            end = Offset(x(0.87f) + torsoSway, y(0.63f) - handLift),
+            strokeWidth = s(0.045f),
+            cap = StrokeCap.Round,
+        )
+        drawCircle(
+            color = Color(0xFFFFD8B8),
+            radius = s(0.035f),
+            center = Offset(x(0.89f) + torsoSway, y(0.61f) - handLift),
+        )
+
+        drawOval(
+            color = Color(0xFFFFD8B8),
+            topLeft = Offset(x(0.32f), y(0.23f) + headBob),
+            size = Size(s(0.36f), s(0.43f)),
+        )
+        drawOval(
+            color = Color(0xFFF2B894),
+            topLeft = Offset(x(0.47f), y(0.46f) + headBob),
+            size = Size(s(0.06f), s(0.11f)),
+        )
+
+        drawPath(
+            path = Path().apply {
+                moveTo(x(0.31f), y(0.34f) + headBob)
+                cubicTo(x(0.32f), y(0.18f) + headBob, x(0.48f), y(0.11f) + headBob, x(0.65f), y(0.23f) + headBob)
+                cubicTo(x(0.72f), y(0.29f) + headBob, x(0.69f), y(0.38f) + headBob, x(0.67f), y(0.42f) + headBob)
+                cubicTo(x(0.57f), y(0.31f) + headBob, x(0.42f), y(0.3f) + headBob, x(0.31f), y(0.34f) + headBob)
+                close()
+            },
+            color = Color(0xFF2F2A27),
+        )
+
+        drawLine(
+            color = Color(0xFF273E3A),
+            start = Offset(x(0.38f), y(0.38f) + headBob),
+            end = Offset(x(0.47f), y(0.36f) + headBob),
+            strokeWidth = s(0.018f),
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = Color(0xFF273E3A),
+            start = Offset(x(0.53f), y(0.36f) + headBob),
+            end = Offset(x(0.62f), y(0.38f) + headBob),
+            strokeWidth = s(0.018f),
+            cap = StrokeCap.Round,
+        )
+
+        val eyeHeight = s(0.026f * (1f - blink).coerceAtLeast(0.12f))
+        val pupilX = eyeShift * s(0.008f)
+        listOf(0.42f, 0.58f).forEach { eyeCenterX ->
+            drawOval(
+                color = Color.White,
+                topLeft = Offset(x(eyeCenterX) - s(0.038f), y(0.42f) + headBob - eyeHeight / 2f),
+                size = Size(s(0.076f), eyeHeight),
+            )
+            if (blink < 0.82f) {
+                drawCircle(
+                    color = Color(0xFF2A2A2A),
+                    radius = s(0.011f),
+                    center = Offset(x(eyeCenterX) + pupilX, y(0.42f) + headBob),
+                )
+            } else {
+                drawLine(
+                    color = Color(0xFF2A2A2A),
+                    start = Offset(x(eyeCenterX) - s(0.03f), y(0.42f) + headBob),
+                    end = Offset(x(eyeCenterX) + s(0.03f), y(0.42f) + headBob),
+                    strokeWidth = s(0.01f),
+                    cap = StrokeCap.Round,
+                )
+            }
+        }
+
+        drawLine(
+            color = Color(0xFF8E6E5B),
+            start = Offset(x(0.5f), y(0.43f) + headBob),
+            end = Offset(x(0.49f), y(0.5f) + headBob),
+            strokeWidth = s(0.008f),
+            cap = StrokeCap.Round,
+        )
+        val mouthWidth = s(0.08f + mouth * 0.015f)
+        val mouthHeight = s(0.012f + mouth * 0.04f)
+        drawRoundRect(
+            color = Color(0xFF6D2432),
+            topLeft = Offset(x(0.5f) - mouthWidth / 2f, y(0.56f) + headBob - mouthHeight / 2f),
+            size = Size(mouthWidth, mouthHeight),
+            cornerRadius = CornerRadius(s(0.025f), s(0.025f)),
+        )
+        drawLine(
+            color = Color(0xFF6D5B51),
+            start = Offset(x(0.46f), y(0.6f) + headBob),
+            end = Offset(x(0.54f), y(0.6f) + headBob),
+            strokeWidth = s(0.008f),
+            cap = StrokeCap.Round,
+        )
+
+        drawOval(
+            color = Color(0xFF485F7C),
+            topLeft = Offset(x(0.34f), y(0.39f) + headBob),
+            size = Size(s(0.12f), s(0.07f)),
+            style = Stroke(width = s(0.01f)),
+        )
+        drawOval(
+            color = Color(0xFF485F7C),
+            topLeft = Offset(x(0.54f), y(0.39f) + headBob),
+            size = Size(s(0.12f), s(0.07f)),
+            style = Stroke(width = s(0.01f)),
+        )
+    }
+}
+
+@Composable
 private fun InterviewerPanel(
     title: String,
     message: String,
@@ -198,12 +445,12 @@ private fun InterviewerPanel(
                 shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.interviewer_portrait),
-                    contentDescription = "FinGuard AI 면접관",
+                AnimatedInterviewerAvatar(
                     modifier = Modifier
                         .padding(4.dp)
                         .fillMaxSize(),
+                    speaking = true,
+                    gesture = true,
                 )
             }
             Column(
@@ -237,12 +484,12 @@ private fun InterviewerQuestionBubble(prompt: String) {
             shape = RoundedCornerShape(8.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.interviewer_portrait),
-                contentDescription = null,
+            AnimatedInterviewerAvatar(
                 modifier = Modifier
                     .padding(3.dp)
                     .fillMaxSize(),
+                speaking = true,
+                gesture = false,
             )
         }
         Surface(
