@@ -15,6 +15,7 @@
    - Affordable repayment or loss amount.
    - Whether essential living or debt-repayment money is included.
    - Whether the user feels pressure to decide today.
+   - App shows a pre-interview risk detection panel.
 
 4. Answer interview questions
    - User writes answers in their own words.
@@ -22,9 +23,12 @@
 
 5. Receive risk report
    - Grade: `안전`, `주의`, `위험`, or `고위험`.
+   - AI action and user outcome.
    - Why this grade was assigned.
+   - Which concepts the user appears to understand.
    - What concept may be misunderstood.
    - Which transaction condition increased or reduced risk.
+   - Follow-up questions and cooling-off notice.
    - Safer next action.
 
 6. Decide outside the app
@@ -36,9 +40,10 @@
 2. Render scenario selection UI.
 3. Render risk explanation for selected scenario.
 4. Collect transaction conditions.
-5. Collect free-form answers.
-6. Pass transaction context and answers to `RiskInterviewAnalyzer`.
-7. Render `RiskInterviewResult`.
+5. Render transaction precheck.
+6. Collect free-form answers.
+7. Pass transaction context and answers to `RiskInterviewAnalyzer`.
+8. Render `RiskInterviewResult`.
 
 ## Analyzer Workflow
 
@@ -47,7 +52,7 @@
 3. Check core-risk understanding signals.
 4. Check repayment/loss burden signals.
 5. Check transaction amount against affordable repayment/loss.
-6. Produce grade and explanation.
+6. Produce grade, AI action, follow-up questions, cooling-off notice, and alternatives.
 
 Suggested deterministic rules:
 

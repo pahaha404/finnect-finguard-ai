@@ -24,6 +24,9 @@ class FinGuardAppSmokeTest {
         composeRule.onNodeWithTag("affordable-amount")
             .performScrollTo()
             .performTextInput("200000")
+        composeRule.onNodeWithTag("transaction-precheck")
+            .performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithTag("start-interview").performClick()
 
         composeRule.onNodeWithTag("answer-revolving-understanding")

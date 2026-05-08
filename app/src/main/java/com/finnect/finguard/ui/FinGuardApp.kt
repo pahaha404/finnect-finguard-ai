@@ -20,9 +20,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shield
@@ -55,6 +55,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.finnect.finguard.domain.RiskGrade
 import com.finnect.finguard.domain.RiskInterviewResult
 import com.finnect.finguard.domain.RiskScenario
+import com.finnect.finguard.domain.RiskTransactionEstimate
+import com.finnect.finguard.domain.toKoreanWon
 
 @Composable
 fun FinGuardApp(viewModel: FinGuardViewModel = viewModel()) {
@@ -72,6 +74,8 @@ fun FinGuardApp(viewModel: FinGuardViewModel = viewModel()) {
         onSubmit = viewModel::submitInterview,
         onBackToScenarios = viewModel::backToScenarios,
         onBackToExplanation = viewModel::backToExplanation,
+        onReviseAnswers = viewModel::reviseAnswers,
+        onEditTransactionContext = viewModel::editTransactionContext,
     )
 }
 
@@ -89,6 +93,8 @@ private fun FinGuardAppContent(
     onSubmit: () -> Unit,
     onBackToScenarios: () -> Unit,
     onBackToExplanation: () -> Unit,
+    onReviseAnswers: () -> Unit,
+    onEditTransactionContext: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier
@@ -100,7 +106,7 @@ private fun FinGuardAppContent(
                 navigationIcon = {
                     if (state.currentStep != FinGuardStep.SCENARIO_SELECTION) {
                         IconButton(onClick = onBackToScenarios) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "처음으로")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "처음으로")
                         }
                     }
                 },
@@ -128,6 +134,7 @@ private fun FinGuardAppContent(
                         affordableText = state.affordableText,
                         usesEssentialMoney = state.usesEssentialMoney,
                         isUrgentToday = state.isUrgentToday,
+                        transactionEstimate = state.transactionEstimate,
                         canStartInterview = state.canStartInterview,
                         onAmountChanged = onAmountChanged,
                         onAffordableChanged = onAffordableChanged,
@@ -154,6 +161,8 @@ private fun FinGuardAppContent(
                             scenario = scenario,
                             result = result,
                             onRestart = onBackToScenarios,
+                            onReviseAnswers = onReviseAnswers,
+                            onEditTransactionContext = onEditTransactionContext,
                         )
                     }
                 }
@@ -220,7 +229,7 @@ private fun ScenarioCard(
                 )
             }
             Icon(
-                imageVector = Icons.Default.ArrowForward,
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )
@@ -235,6 +244,7 @@ private fun ExplanationScreen(
     affordableText: String,
     usesEssentialMoney: Boolean,
     isUrgentToday: Boolean,
+    transactionEstimate: RiskTransactionEstimate?,
     canStartInterview: Boolean,
     onAmountChanged: (String) -> Unit,
     onAffordableChanged: (String) -> Unit,
@@ -269,6 +279,11 @@ private fun ExplanationScreen(
                 onUrgentTodayChanged = onUrgentTodayChanged,
             )
         }
+        if (transactionEstimate != null) {
+            item {
+                TransactionPrecheckPanel(estimate = transactionEstimate)
+            }
+        }
         item {
             Button(
                 onClick = onStartInterview,
@@ -281,6 +296,14 @@ private fun ExplanationScreen(
                 Icon(Icons.Default.Shield, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("이해도 면접 시작")
+            }
+            if (!canStartInterview) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "거래금액과 감당 가능한 금액을 입력하면 면접을 시작할 수 있습니다.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -378,6 +401,47 @@ private fun BinaryCheckRow(
 }
 
 @Composable
+private fun TransactionPrecheckPanel(estimate: RiskTransactionEstimate) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("transaction-precheck"),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "위험거래 감지: ${estimate.precheckGrade.label}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = estimate.headline,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            estimate.projectedPressureWon?.let { pressure ->
+                Text(
+                    text = "${estimate.pressureLabel}: ${pressure.toKoreanWon()}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            estimate.warnings.forEach { warning ->
+                Text(
+                    text = "- $warning",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun InterviewScreen(
     scenario: RiskScenario,
     answers: Map<String, String>,
@@ -428,7 +492,7 @@ private fun InterviewScreen(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
                 ) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("설명 다시 보기")
                 }
@@ -454,6 +518,8 @@ private fun ResultScreen(
     scenario: RiskScenario,
     result: RiskInterviewResult,
     onRestart: () -> Unit,
+    onReviseAnswers: () -> Unit,
+    onEditTransactionContext: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -474,6 +540,12 @@ private fun ResultScreen(
         }
         item {
             TextListBlock(
+                title = "이해한 내용",
+                values = result.understoodConcepts.ifEmpty { listOf("충분히 확인된 핵심 개념이 아직 없습니다.") },
+            )
+        }
+        item {
+            TextListBlock(
                 title = "거래 조건 점검",
                 values = result.contextWarnings.ifEmpty { listOf("거래 조건상 즉시 가중된 위험은 감지되지 않았습니다.") },
             )
@@ -491,6 +563,32 @@ private fun ResultScreen(
             )
         }
         item {
+            TextListBlock(
+                title = "재질문 포인트",
+                values = result.followUpQuestions,
+            )
+        }
+        item {
+            TextListBlock(
+                title = "대안 행동",
+                values = result.saferAlternatives,
+            )
+        }
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    text = result.coolingOffNotice,
+                    modifier = Modifier.padding(14.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        item {
             Text(
                 text = "이 결과는 금융 의사결정을 돕는 이해도 점검이며, 법적 금융자문이나 투자 권유가 아닙니다.",
                 style = MaterialTheme.typography.bodySmall,
@@ -498,14 +596,35 @@ private fun ResultScreen(
             )
         }
         item {
-            Button(
-                onClick = onRestart,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("다른 거래 점검")
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onReviseAnswers,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Text("답변 수정")
+                    }
+                    OutlinedButton(
+                        onClick = onEditTransactionContext,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Text("조건 수정")
+                    }
+                }
+                Button(
+                    onClick = onRestart,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("다른 거래 점검")
+                }
             }
         }
     }
@@ -537,6 +656,13 @@ private fun GradePanel(result: RiskInterviewResult) {
                 text = result.misunderstoodConcepts.joinToString(separator = " / ").ifBlank { "중대한 오해는 감지되지 않았습니다." },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimary,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "${result.grade.aiAction} · ${result.grade.userOutcome}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }

@@ -33,8 +33,9 @@ Prefer Codex Cloud for substantial future changes after this repository is conne
 
 - Scenario selection screen.
 - Scenario risk explanation screen.
+- Transaction-condition screen section with pre-interview risk detection.
 - Interview screen with question prompts and free-form answers.
-- Result report screen with risk grade, reasoning summary, misunderstood concepts, and recommended actions.
+- Result report screen with risk grade, AI action, reasoning summary, understood/misunderstood concepts, transaction warnings, follow-up questions, cooling-off notice, alternatives, and recommended actions.
 
 ## Test Requirements
 

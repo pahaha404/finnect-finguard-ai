@@ -7,7 +7,9 @@ import com.finnect.finguard.domain.RiskInterviewAnalyzer
 import com.finnect.finguard.domain.RiskInterviewRequest
 import com.finnect.finguard.domain.RiskInterviewResult
 import com.finnect.finguard.domain.RiskScenario
+import com.finnect.finguard.domain.RiskTransactionEstimate
 import com.finnect.finguard.domain.RiskTransactionContext
+import com.finnect.finguard.domain.RiskTransactionEstimator
 import com.finnect.finguard.domain.ScenarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +35,16 @@ data class FinGuardUiState(
 ) {
     val canStartInterview: Boolean
         get() = amountText.onlyDigits().isNotBlank() && affordableText.onlyDigits().isNotBlank()
+
+    val transactionEstimate: RiskTransactionEstimate?
+        get() = selectedScenario
+            ?.takeIf { canStartInterview }
+            ?.let { scenario ->
+                RiskTransactionEstimator.estimate(
+                    scenarioType = scenario.type,
+                    context = toTransactionContext(),
+                )
+            }
 
     val canSubmit: Boolean
         get() = selectedScenario?.questions?.all { question ->
@@ -120,6 +132,14 @@ class FinGuardViewModel(
     }
 
     fun backToExplanation() {
+        _uiState.update { it.copy(currentStep = FinGuardStep.EXPLANATION, result = null) }
+    }
+
+    fun reviseAnswers() {
+        _uiState.update { it.copy(currentStep = FinGuardStep.INTERVIEW, result = null) }
+    }
+
+    fun editTransactionContext() {
         _uiState.update { it.copy(currentStep = FinGuardStep.EXPLANATION, result = null) }
     }
 }

@@ -17,8 +17,12 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
             .map { it.label }
         val hasBurden = detectsRepaymentOrLossBurden(combinedText)
         val hasInvestmentBurden = request.scenario.type in investmentTypes && hasBurden
-        val contextWarnings = contextWarningsFor(request)
-        val contextGrade = gradeFromContext(request)
+        val transactionEstimate = RiskTransactionEstimator.estimate(
+            scenarioType = request.scenario.type,
+            context = request.transactionContext,
+        )
+        val contextWarnings = transactionEstimate.warnings
+        val contextGrade = transactionEstimate.precheckGrade
 
         val initialGrade = when {
             hasInvestmentBurden -> RiskGrade.HIGH_RISK
@@ -44,63 +48,15 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
         return RiskInterviewResult(
             grade = grade,
             summary = summaryFor(grade, request.scenario),
+            understoodConcepts = matchedConcepts.map { it.label },
             misunderstoodConcepts = if (misunderstandings.isEmpty()) missingConcepts else misunderstandings,
             contextWarnings = contextWarnings,
             riskFactors = riskFactors,
+            followUpQuestions = followUpQuestionsFor(missingConcepts, request.scenario),
             recommendedActions = actionsFor(grade, request.scenario),
+            saferAlternatives = saferAlternativesFor(grade, request.scenario),
+            coolingOffNotice = coolingOffNoticeFor(grade),
         )
-    }
-
-    private fun gradeFromContext(request: RiskInterviewRequest): RiskGrade {
-        val context = request.transactionContext
-        val amount = context.amountWon ?: return if (context.usesEssentialMoney) RiskGrade.RISK else RiskGrade.SAFE
-        val affordable = context.affordableLossOrPaymentWon
-        val projectedPressure = projectedPressureWon(request.scenario.type, amount)
-
-        return when {
-            context.usesEssentialMoney && context.isUrgentToday -> RiskGrade.HIGH_RISK
-            context.usesEssentialMoney -> RiskGrade.RISK
-            affordable != null && projectedPressure > affordable * 2 -> RiskGrade.HIGH_RISK
-            affordable != null && projectedPressure > affordable -> RiskGrade.RISK
-            context.isUrgentToday && request.scenario.type in investmentTypes -> RiskGrade.RISK
-            context.isUrgentToday -> RiskGrade.CAUTION
-            else -> RiskGrade.SAFE
-        }
-    }
-
-    private fun contextWarningsFor(request: RiskInterviewRequest): List<String> {
-        val context = request.transactionContext
-        val amount = context.amountWon
-        val affordable = context.affordableLossOrPaymentWon
-
-        return buildList {
-            if (context.usesEssentialMoney) {
-                add("생활비나 대출 상환에 필요한 돈이 포함되어 있음")
-            }
-            if (context.isUrgentToday) {
-                add("오늘 바로 결정하려는 압박이 있어 냉각 시간이 필요함")
-            }
-            if (amount != null && affordable != null) {
-                val pressure = projectedPressureWon(request.scenario.type, amount)
-                val label = if (request.scenario.type in investmentTypes) "30% 손실 추정액" else "초기 상환 부담 추정액"
-                if (pressure > affordable) {
-                    add("$label ${pressure.toKoreanWon()}이 감당 가능 금액 ${affordable.toKoreanWon()}을 초과함")
-                } else {
-                    add("$label ${pressure.toKoreanWon()}이 입력한 감당 가능 범위 안에 있음")
-                }
-            }
-        }
-    }
-
-    private fun projectedPressureWon(
-        scenarioType: ScenarioType,
-        amountWon: Long,
-    ): Long = when (scenarioType) {
-        ScenarioType.REVOLVING -> (amountWon * 0.15).toLong().coerceAtLeast(1L)
-        ScenarioType.CARD_LOAN -> (amountWon * 0.20).toLong().coerceAtLeast(1L)
-        ScenarioType.CRYPTO,
-        ScenarioType.SURGING_STOCK,
-        -> (amountWon * 0.30).toLong().coerceAtLeast(1L)
     }
 
     private fun detectsRepaymentOrLossBurden(text: String): Boolean {
@@ -165,14 +121,56 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
         )
     }
 
+    private fun followUpQuestionsFor(
+        missingConcepts: List<String>,
+        scenario: RiskScenario,
+    ): List<String> = if (missingConcepts.isEmpty()) {
+        listOf("결정 전에 ${scenario.title}의 금액, 기간, 중단 기준을 다시 말로 설명해 보세요.")
+    } else {
+        missingConcepts.map { concept -> "$concept: 이 내용을 본인 말로 다시 설명해 보세요." }
+    }
+
+    private fun saferAlternativesFor(
+        grade: RiskGrade,
+        scenario: RiskScenario,
+    ): List<String> = when (scenario.type) {
+        ScenarioType.REVOLVING -> listOf(
+            "카드사 앱에서 결제일 변경, 분할 납부, 즉시결제 가능 금액을 비교하세요.",
+            "필수 지출을 제외한 예산을 다시 잡고 다음 달 이월액을 줄이세요.",
+            "반복 사용 중이면 카드사 또는 서민금융 상담을 먼저 확인하세요.",
+        )
+        ScenarioType.CARD_LOAN -> listOf(
+            "월 상환액이 생활비를 침범하지 않는 더 낮은 금액으로 줄이세요.",
+            "은행권 대출, 정책금융, 채무상담처럼 금리와 상환 조건이 낮은 대안을 비교하세요.",
+            "급전 목적이면 오늘 신청 전 최소 하루 냉각 시간을 두세요.",
+        )
+        ScenarioType.CRYPTO -> listOf(
+            "생활비와 대출 상환금을 제외한 여유 자금만 사용하세요.",
+            "매수 금액을 줄이고 손실 한도를 먼저 정하세요.",
+            "즉시 매수 대신 관망, 모의투자, 소액 분할 접근을 검토하세요.",
+        )
+        ScenarioType.SURGING_STOCK -> listOf(
+            "뉴스나 커뮤니티 분위기보다 매수 이유와 손절 기준을 먼저 적어 보세요.",
+            "급등 직후 전액 매수보다 금액 축소, 분할, 관망을 검토하세요.",
+            "생활비에 영향을 주는 돈이면 매수를 보류하세요.",
+        )
+    }.let { alternatives ->
+        if (grade == RiskGrade.SAFE) alternatives.take(2) else alternatives
+    }
+
+    private fun coolingOffNoticeFor(grade: RiskGrade): String = when (grade) {
+        RiskGrade.SAFE -> "냉각 시간은 필수는 아니지만, 금액을 늘리기 전에는 같은 점검을 다시 진행하세요."
+        RiskGrade.CAUTION -> "최소 30분 뒤 같은 질문에 다시 답하고 빠진 개념이 없는지 확인하세요."
+        RiskGrade.RISK -> "오늘 바로 진행하지 말고 최소 24시간 뒤 금액과 대안을 다시 비교하세요."
+        RiskGrade.HIGH_RISK -> "즉시 진행을 늦추고 상담 또는 신뢰할 수 있는 사람과 함께 조건을 재검토하세요."
+    }
+
     private fun String.normalized(): String = lowercase(Locale.KOREAN)
         .replace("\\s+".toRegex(), " ")
         .trim()
 
     private fun RiskGrade.max(other: RiskGrade): RiskGrade =
         if (severity >= other.severity) this else other
-
-    private fun Long.toKoreanWon(): String = "%,d원".format(this)
 
     private data class RequiredConcept(
         val label: String,
