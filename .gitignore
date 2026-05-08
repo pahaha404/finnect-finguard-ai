@@ -14,6 +14,9 @@ captures/
 *.aab
 *.log
 
+# Separate React Native repo
+finnect-finguard-ai-react-native/
+
 # OS
 .DS_Store
 Thumbs.db
