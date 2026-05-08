@@ -17,6 +17,7 @@ class FinGuardAppSmokeTest {
     @Test
     fun userCanCompleteScenarioToResultReport() {
         composeRule.onNodeWithTag("scenario-revolving").performClick()
+        composeRule.onNodeWithTag("interviewer-panel").assertIsDisplayed()
         composeRule.onNodeWithText("이해도 면접 시작").assertIsDisplayed()
         composeRule.onNodeWithTag("transaction-amount")
             .performScrollTo()

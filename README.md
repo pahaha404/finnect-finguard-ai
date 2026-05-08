@@ -14,6 +14,7 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 ## Implemented MVP
 
 - Scenario selection: revolving credit, card loan, crypto, and surging stock.
+- Human-style AI interviewer portrait shown in the explanation, interview, and result flow.
 - Plain-language risk explanation before each decision.
 - Transaction-condition input: amount, affordable repayment/loss, essential-money usage, and urgency.
 - Pre-interview risk detection with projected repayment or 30% loss pressure.
@@ -35,6 +36,7 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 
 - `app/src/main/java/com/finnect/finguard/domain`: scenarios, transaction precheck, interview models, `RiskInterviewAnalyzer`, and local deterministic analyzer.
 - `app/src/main/java/com/finnect/finguard/ui`: Compose screens and UI state owner.
+- `app/src/main/res/drawable/interviewer_portrait.xml`: local interviewer portrait asset used by the app.
 - `app/src/test`: analyzer unit tests.
 - `app/src/androidTest`: Compose smoke test.
 

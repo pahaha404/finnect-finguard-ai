@@ -1,5 +1,6 @@
 package com.finnect.finguard.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -47,11 +49,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.finnect.finguard.R
 import com.finnect.finguard.domain.RiskGrade
 import com.finnect.finguard.domain.RiskInterviewResult
 import com.finnect.finguard.domain.RiskScenario
@@ -172,6 +176,103 @@ private fun FinGuardAppContent(
 }
 
 @Composable
+private fun InterviewerPanel(
+    title: String,
+    message: String,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("interviewer-panel"),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                modifier = Modifier.size(82.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.interviewer_portrait),
+                    contentDescription = "FinGuard AI 면접관",
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .fillMaxSize(),
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InterviewerQuestionBubble(prompt: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Surface(
+            modifier = Modifier.size(48.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.interviewer_portrait),
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(3.dp)
+                    .fillMaxSize(),
+            )
+        }
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 1.dp,
+            shadowElevation = 1.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = "FinGuard 면접관",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = prompt,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ScenarioSelectionScreen(
     scenarios: List<RiskScenario>,
     onScenarioSelected: (RiskScenario) -> Unit,
@@ -262,6 +363,12 @@ private fun ExplanationScreen(
                 eyebrow = scenario.subtitle,
                 title = scenario.title,
                 body = scenario.explanation,
+            )
+        }
+        item {
+            InterviewerPanel(
+                title = "FinGuard AI 면접관",
+                message = "거래를 막으려는 것이 아니라, 위험을 이해한 상태에서 선택하도록 돕겠습니다. 먼저 조건을 확인한 뒤 짧게 질문드릴게요.",
             )
         }
         item {
@@ -456,19 +563,14 @@ private fun InterviewScreen(
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item {
-            HeaderBlock(
-                eyebrow = "AI 면접",
-                title = scenario.title,
-                body = "정답을 고르는 화면이 아닙니다. 이해한 내용을 본인 말로 적으면 앱이 오해 가능성을 점검합니다.",
+            InterviewerPanel(
+                title = "AI 면접: ${scenario.title}",
+                message = "정답을 고르는 화면이 아닙니다. 제가 묻는 내용을 본인 말로 답해 주세요. 답변 속 오해 가능성과 손실 감내 능력을 함께 확인하겠습니다.",
             )
         }
         items(scenario.questions, key = { it.id }) { question ->
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = question.prompt,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                InterviewerQuestionBubble(prompt = question.prompt)
                 OutlinedTextField(
                     value = answers[question.id].orEmpty(),
                     onValueChange = { onAnswerChanged(question.id, it) },
@@ -529,10 +631,9 @@ private fun ResultScreen(
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         item {
-            HeaderBlock(
-                eyebrow = scenario.title,
-                title = "위험등급 ${result.grade.label}",
-                body = result.summary,
+            InterviewerPanel(
+                title = "면접 결과: ${result.grade.label}",
+                message = result.summary,
             )
         }
         item {

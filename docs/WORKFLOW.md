@@ -6,6 +6,7 @@
    - Revolving credit, card loan, crypto, or surging stock.
 
 2. Read plain-language risk explanation
+   - Human-style AI interviewer introduces the purpose of the check.
    - What the product/action does.
    - What can go wrong.
    - Which cost, repayment, or loss risks matter.
@@ -18,6 +19,7 @@
    - App shows a pre-interview risk detection panel.
 
 4. Answer interview questions
+   - Questions are shown as interviewer speech bubbles.
    - User writes answers in their own words.
    - Questions check understanding and loss/repayment tolerance.
 
