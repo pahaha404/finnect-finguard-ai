@@ -49,8 +49,33 @@ class LocalRuleBasedRiskInterviewAnalyzerTest {
         assertTrue(result.grade == RiskGrade.SAFE || result.grade == RiskGrade.CAUTION)
     }
 
+    @Test
+    fun transactionContextCanRaiseOtherwiseCorrectInvestmentToHighRisk() {
+        val result = analyze(
+            scenarioId = "crypto",
+            context = RiskTransactionContext(
+                amountWon = 10_000_000,
+                affordableLossOrPaymentWon = 1_000_000,
+                usesEssentialMoney = false,
+                isUrgentToday = false,
+            ),
+            answers = listOf(
+                "원금 손실 가능성이 있고 30% 이상 잃을 수도 있습니다.",
+                "가격 변동성이 커서 급락할 수 있습니다.",
+                "여유 자금 안에서만 투자하고 손실 한도를 정해야 합니다.",
+            ),
+        )
+
+        assertEquals(RiskGrade.HIGH_RISK, result.grade)
+        assertTrue(result.contextWarnings.any { it.contains("감당 가능 금액") })
+    }
+
     private fun analyze(
         scenarioId: String,
+        context: RiskTransactionContext = RiskTransactionContext(
+            amountWon = 500_000,
+            affordableLossOrPaymentWon = 500_000,
+        ),
         answers: List<String>,
     ): RiskInterviewResult {
         val scenario = ScenarioRepository.findById(scenarioId)
@@ -58,6 +83,7 @@ class LocalRuleBasedRiskInterviewAnalyzerTest {
         return analyzer.analyze(
             RiskInterviewRequest(
                 scenario = scenario,
+                transactionContext = context,
                 answers = scenario.questions.zip(answers).map { (question, answer) ->
                     InterviewAnswer(questionId = question.id, answer = answer)
                 },

@@ -21,6 +21,7 @@ Build an Android MVP that simulates the pre-transaction safety check:
 
 - Let the user select one risky financial scenario.
 - Explain the risk in plain Korean.
+- Capture basic transaction conditions such as amount, affordable repayment/loss, essential-money usage, and urgency.
 - Ask interview questions requiring free-form answers.
 - Analyze answers with a local rule-based model.
 - Produce a risk grade and practical next actions.
@@ -54,12 +55,14 @@ Build an Android MVP that simulates the pre-transaction safety check:
 
 - Scenario cards for the four MVP scenarios.
 - Scenario-specific explanations and interview questions.
+- Transaction-condition form before the interview.
 - Free-form answer input.
 - Local deterministic analyzer implementing `RiskInterviewAnalyzer`.
 - Report showing:
   - risk grade,
   - short explanation,
   - detected misunderstanding,
+  - transaction-condition warnings,
   - recommended next action,
   - non-advice disclaimer.
 

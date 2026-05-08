@@ -38,8 +38,16 @@ data class InterviewAnswer(
     val answer: String,
 )
 
+data class RiskTransactionContext(
+    val amountWon: Long? = null,
+    val affordableLossOrPaymentWon: Long? = null,
+    val usesEssentialMoney: Boolean = false,
+    val isUrgentToday: Boolean = false,
+)
+
 data class RiskInterviewRequest(
     val scenario: RiskScenario,
+    val transactionContext: RiskTransactionContext = RiskTransactionContext(),
     val answers: List<InterviewAnswer>,
 )
 
@@ -47,6 +55,7 @@ data class RiskInterviewResult(
     val grade: RiskGrade,
     val summary: String,
     val misunderstoodConcepts: List<String>,
+    val contextWarnings: List<String>,
     val riskFactors: List<String>,
     val recommendedActions: List<String>,
 )

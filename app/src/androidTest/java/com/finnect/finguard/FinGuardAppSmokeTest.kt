@@ -18,6 +18,12 @@ class FinGuardAppSmokeTest {
     fun userCanCompleteScenarioToResultReport() {
         composeRule.onNodeWithTag("scenario-revolving").performClick()
         composeRule.onNodeWithText("이해도 면접 시작").assertIsDisplayed()
+        composeRule.onNodeWithTag("transaction-amount")
+            .performScrollTo()
+            .performTextInput("500000")
+        composeRule.onNodeWithTag("affordable-amount")
+            .performScrollTo()
+            .performTextInput("200000")
         composeRule.onNodeWithTag("start-interview").performClick()
 
         composeRule.onNodeWithTag("answer-revolving-understanding")

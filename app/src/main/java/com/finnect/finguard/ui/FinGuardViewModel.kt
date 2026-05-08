@@ -7,6 +7,7 @@ import com.finnect.finguard.domain.RiskInterviewAnalyzer
 import com.finnect.finguard.domain.RiskInterviewRequest
 import com.finnect.finguard.domain.RiskInterviewResult
 import com.finnect.finguard.domain.RiskScenario
+import com.finnect.finguard.domain.RiskTransactionContext
 import com.finnect.finguard.domain.ScenarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,9 +24,16 @@ data class FinGuardUiState(
     val scenarios: List<RiskScenario> = ScenarioRepository.scenarios,
     val currentStep: FinGuardStep = FinGuardStep.SCENARIO_SELECTION,
     val selectedScenario: RiskScenario? = null,
+    val amountText: String = "",
+    val affordableText: String = "",
+    val usesEssentialMoney: Boolean = false,
+    val isUrgentToday: Boolean = false,
     val answers: Map<String, String> = emptyMap(),
     val result: RiskInterviewResult? = null,
 ) {
+    val canStartInterview: Boolean
+        get() = amountText.onlyDigits().isNotBlank() && affordableText.onlyDigits().isNotBlank()
+
     val canSubmit: Boolean
         get() = selectedScenario?.questions?.all { question ->
             answers[question.id].orEmpty().isNotBlank()
@@ -43,6 +51,10 @@ class FinGuardViewModel(
             it.copy(
                 currentStep = FinGuardStep.EXPLANATION,
                 selectedScenario = scenario,
+                amountText = "",
+                affordableText = "",
+                usesEssentialMoney = false,
+                isUrgentToday = false,
                 answers = emptyMap(),
                 result = null,
             )
@@ -50,7 +62,24 @@ class FinGuardViewModel(
     }
 
     fun startInterview() {
+        if (!_uiState.value.canStartInterview) return
         _uiState.update { it.copy(currentStep = FinGuardStep.INTERVIEW) }
+    }
+
+    fun updateAmountText(value: String) {
+        _uiState.update { it.copy(amountText = value.filterAmountInput()) }
+    }
+
+    fun updateAffordableText(value: String) {
+        _uiState.update { it.copy(affordableText = value.filterAmountInput()) }
+    }
+
+    fun setUsesEssentialMoney(value: Boolean) {
+        _uiState.update { it.copy(usesEssentialMoney = value) }
+    }
+
+    fun setUrgentToday(value: Boolean) {
+        _uiState.update { it.copy(isUrgentToday = value) }
     }
 
     fun updateAnswer(
@@ -69,6 +98,7 @@ class FinGuardViewModel(
 
         val request = RiskInterviewRequest(
             scenario = scenario,
+            transactionContext = state.toTransactionContext(),
             answers = scenario.questions.map { question ->
                 InterviewAnswer(
                     questionId = question.id,
@@ -93,3 +123,17 @@ class FinGuardViewModel(
         _uiState.update { it.copy(currentStep = FinGuardStep.EXPLANATION, result = null) }
     }
 }
+
+private fun FinGuardUiState.toTransactionContext(): RiskTransactionContext =
+    RiskTransactionContext(
+        amountWon = amountText.onlyDigits().toLongOrNull(),
+        affordableLossOrPaymentWon = affordableText.onlyDigits().toLongOrNull(),
+        usesEssentialMoney = usesEssentialMoney,
+        isUrgentToday = isUrgentToday,
+    )
+
+private fun String.filterAmountInput(): String =
+    filter { it.isDigit() }.take(12)
+
+private fun String.onlyDigits(): String =
+    filter { it.isDigit() }

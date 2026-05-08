@@ -17,6 +17,8 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
             .map { it.label }
         val hasBurden = detectsRepaymentOrLossBurden(combinedText)
         val hasInvestmentBurden = request.scenario.type in investmentTypes && hasBurden
+        val contextWarnings = contextWarningsFor(request)
+        val contextGrade = gradeFromContext(request)
 
         val initialGrade = when {
             hasInvestmentBurden -> RiskGrade.HIGH_RISK
@@ -30,7 +32,7 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
             RiskGrade.HIGH_RISK
         } else {
             initialGrade
-        }
+        }.max(contextGrade)
 
         val riskFactors = buildList {
             addAll(misunderstandings)
@@ -43,9 +45,62 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
             grade = grade,
             summary = summaryFor(grade, request.scenario),
             misunderstoodConcepts = if (misunderstandings.isEmpty()) missingConcepts else misunderstandings,
+            contextWarnings = contextWarnings,
             riskFactors = riskFactors,
             recommendedActions = actionsFor(grade, request.scenario),
         )
+    }
+
+    private fun gradeFromContext(request: RiskInterviewRequest): RiskGrade {
+        val context = request.transactionContext
+        val amount = context.amountWon ?: return if (context.usesEssentialMoney) RiskGrade.RISK else RiskGrade.SAFE
+        val affordable = context.affordableLossOrPaymentWon
+        val projectedPressure = projectedPressureWon(request.scenario.type, amount)
+
+        return when {
+            context.usesEssentialMoney && context.isUrgentToday -> RiskGrade.HIGH_RISK
+            context.usesEssentialMoney -> RiskGrade.RISK
+            affordable != null && projectedPressure > affordable * 2 -> RiskGrade.HIGH_RISK
+            affordable != null && projectedPressure > affordable -> RiskGrade.RISK
+            context.isUrgentToday && request.scenario.type in investmentTypes -> RiskGrade.RISK
+            context.isUrgentToday -> RiskGrade.CAUTION
+            else -> RiskGrade.SAFE
+        }
+    }
+
+    private fun contextWarningsFor(request: RiskInterviewRequest): List<String> {
+        val context = request.transactionContext
+        val amount = context.amountWon
+        val affordable = context.affordableLossOrPaymentWon
+
+        return buildList {
+            if (context.usesEssentialMoney) {
+                add("생활비나 대출 상환에 필요한 돈이 포함되어 있음")
+            }
+            if (context.isUrgentToday) {
+                add("오늘 바로 결정하려는 압박이 있어 냉각 시간이 필요함")
+            }
+            if (amount != null && affordable != null) {
+                val pressure = projectedPressureWon(request.scenario.type, amount)
+                val label = if (request.scenario.type in investmentTypes) "30% 손실 추정액" else "초기 상환 부담 추정액"
+                if (pressure > affordable) {
+                    add("$label ${pressure.toKoreanWon()}이 감당 가능 금액 ${affordable.toKoreanWon()}을 초과함")
+                } else {
+                    add("$label ${pressure.toKoreanWon()}이 입력한 감당 가능 범위 안에 있음")
+                }
+            }
+        }
+    }
+
+    private fun projectedPressureWon(
+        scenarioType: ScenarioType,
+        amountWon: Long,
+    ): Long = when (scenarioType) {
+        ScenarioType.REVOLVING -> (amountWon * 0.15).toLong().coerceAtLeast(1L)
+        ScenarioType.CARD_LOAN -> (amountWon * 0.20).toLong().coerceAtLeast(1L)
+        ScenarioType.CRYPTO,
+        ScenarioType.SURGING_STOCK,
+        -> (amountWon * 0.30).toLong().coerceAtLeast(1L)
     }
 
     private fun detectsRepaymentOrLossBurden(text: String): Boolean {
@@ -113,6 +168,11 @@ class LocalRuleBasedRiskInterviewAnalyzer : RiskInterviewAnalyzer {
     private fun String.normalized(): String = lowercase(Locale.KOREAN)
         .replace("\\s+".toRegex(), " ")
         .trim()
+
+    private fun RiskGrade.max(other: RiskGrade): RiskGrade =
+        if (severity >= other.severity) this else other
+
+    private fun Long.toKoreanWon(): String = "%,d원".format(this)
 
     private data class RequiredConcept(
         val label: String,

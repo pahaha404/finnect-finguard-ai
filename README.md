@@ -15,6 +15,7 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 
 - Scenario selection: revolving credit, card loan, crypto, and surging stock.
 - Plain-language risk explanation before each decision.
+- Transaction-condition input: amount, affordable repayment/loss, essential-money usage, and urgency.
 - Interview-style question and answer flow.
 - Understanding/risk classification: `안전`, `주의`, `위험`, `고위험`.
 - Result report with misunderstood concepts, risk factors, and alternative actions.
@@ -31,7 +32,7 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 
 ## Project Layout
 
-- `app/src/main/java/com/finnect/finguard/domain`: scenarios, interview models, `RiskInterviewAnalyzer`, and local deterministic analyzer.
+- `app/src/main/java/com/finnect/finguard/domain`: scenarios, transaction context, interview models, `RiskInterviewAnalyzer`, and local deterministic analyzer.
 - `app/src/main/java/com/finnect/finguard/ui`: Compose screens and UI state owner.
 - `app/src/test`: analyzer unit tests.
 - `app/src/androidTest`: Compose smoke test.

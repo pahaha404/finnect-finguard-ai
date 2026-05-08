@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
@@ -30,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,6 +64,10 @@ fun FinGuardApp(viewModel: FinGuardViewModel = viewModel()) {
         state = state,
         onScenarioSelected = viewModel::selectScenario,
         onStartInterview = viewModel::startInterview,
+        onAmountChanged = viewModel::updateAmountText,
+        onAffordableChanged = viewModel::updateAffordableText,
+        onEssentialMoneyChanged = viewModel::setUsesEssentialMoney,
+        onUrgentTodayChanged = viewModel::setUrgentToday,
         onAnswerChanged = viewModel::updateAnswer,
         onSubmit = viewModel::submitInterview,
         onBackToScenarios = viewModel::backToScenarios,
@@ -74,6 +81,10 @@ private fun FinGuardAppContent(
     state: FinGuardUiState,
     onScenarioSelected: (RiskScenario) -> Unit,
     onStartInterview: () -> Unit,
+    onAmountChanged: (String) -> Unit,
+    onAffordableChanged: (String) -> Unit,
+    onEssentialMoneyChanged: (Boolean) -> Unit,
+    onUrgentTodayChanged: (Boolean) -> Unit,
     onAnswerChanged: (String, String) -> Unit,
     onSubmit: () -> Unit,
     onBackToScenarios: () -> Unit,
@@ -113,6 +124,15 @@ private fun FinGuardAppContent(
                 FinGuardStep.EXPLANATION -> state.selectedScenario?.let {
                     ExplanationScreen(
                         scenario = it,
+                        amountText = state.amountText,
+                        affordableText = state.affordableText,
+                        usesEssentialMoney = state.usesEssentialMoney,
+                        isUrgentToday = state.isUrgentToday,
+                        canStartInterview = state.canStartInterview,
+                        onAmountChanged = onAmountChanged,
+                        onAffordableChanged = onAffordableChanged,
+                        onEssentialMoneyChanged = onEssentialMoneyChanged,
+                        onUrgentTodayChanged = onUrgentTodayChanged,
                         onStartInterview = onStartInterview,
                     )
                 }
@@ -211,6 +231,15 @@ private fun ScenarioCard(
 @Composable
 private fun ExplanationScreen(
     scenario: RiskScenario,
+    amountText: String,
+    affordableText: String,
+    usesEssentialMoney: Boolean,
+    isUrgentToday: Boolean,
+    canStartInterview: Boolean,
+    onAmountChanged: (String) -> Unit,
+    onAffordableChanged: (String) -> Unit,
+    onEssentialMoneyChanged: (Boolean) -> Unit,
+    onUrgentTodayChanged: (Boolean) -> Unit,
     onStartInterview: () -> Unit,
 ) {
     LazyColumn(
@@ -229,8 +258,21 @@ private fun ExplanationScreen(
             RiskChips(risks = scenario.keyRisks)
         }
         item {
+            TransactionContextForm(
+                amountText = amountText,
+                affordableText = affordableText,
+                usesEssentialMoney = usesEssentialMoney,
+                isUrgentToday = isUrgentToday,
+                onAmountChanged = onAmountChanged,
+                onAffordableChanged = onAffordableChanged,
+                onEssentialMoneyChanged = onEssentialMoneyChanged,
+                onUrgentTodayChanged = onUrgentTodayChanged,
+            )
+        }
+        item {
             Button(
                 onClick = onStartInterview,
+                enabled = canStartInterview,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("start-interview"),
@@ -241,6 +283,97 @@ private fun ExplanationScreen(
                 Text("이해도 면접 시작")
             }
         }
+    }
+}
+
+@Composable
+private fun TransactionContextForm(
+    amountText: String,
+    affordableText: String,
+    usesEssentialMoney: Boolean,
+    isUrgentToday: Boolean,
+    onAmountChanged: (String) -> Unit,
+    onAffordableChanged: (String) -> Unit,
+    onEssentialMoneyChanged: (Boolean) -> Unit,
+    onUrgentTodayChanged: (Boolean) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "거래 조건",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = onAmountChanged,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("transaction-amount"),
+                label = { Text("거래금액") },
+                suffix = { Text("원") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp),
+            )
+            OutlinedTextField(
+                value = affordableText,
+                onValueChange = onAffordableChanged,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("affordable-amount"),
+                label = { Text("감당 가능한 상환액 또는 손실액") },
+                suffix = { Text("원") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp),
+            )
+            BinaryCheckRow(
+                checked = usesEssentialMoney,
+                onCheckedChange = onEssentialMoneyChanged,
+                label = "생활비나 대출 상환에 필요한 돈이 포함되어 있음",
+                tag = "uses-essential-money",
+            )
+            BinaryCheckRow(
+                checked = isUrgentToday,
+                onCheckedChange = onUrgentTodayChanged,
+                label = "오늘 바로 결정해야 한다고 느끼고 있음",
+                tag = "urgent-today",
+            )
+        }
+    }
+}
+
+@Composable
+private fun BinaryCheckRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    label: String,
+    tag: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -338,6 +471,12 @@ private fun ResultScreen(
         }
         item {
             GradePanel(result = result)
+        }
+        item {
+            TextListBlock(
+                title = "거래 조건 점검",
+                values = result.contextWarnings.ifEmpty { listOf("거래 조건상 즉시 가중된 위험은 감지되지 않았습니다.") },
+            )
         }
         item {
             TextListBlock(

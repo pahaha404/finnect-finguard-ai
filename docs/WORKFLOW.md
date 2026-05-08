@@ -10,17 +10,24 @@
    - What can go wrong.
    - Which cost, repayment, or loss risks matter.
 
-3. Answer interview questions
+3. Enter transaction conditions
+   - Planned amount.
+   - Affordable repayment or loss amount.
+   - Whether essential living or debt-repayment money is included.
+   - Whether the user feels pressure to decide today.
+
+4. Answer interview questions
    - User writes answers in their own words.
    - Questions check understanding and loss/repayment tolerance.
 
-4. Receive risk report
+5. Receive risk report
    - Grade: `안전`, `주의`, `위험`, or `고위험`.
    - Why this grade was assigned.
    - What concept may be misunderstood.
+   - Which transaction condition increased or reduced risk.
    - Safer next action.
 
-5. Decide outside the app
+6. Decide outside the app
    - The MVP does not execute or block real financial transactions.
 
 ## App Workflow
@@ -28,9 +35,10 @@
 1. Load scenario definitions.
 2. Render scenario selection UI.
 3. Render risk explanation for selected scenario.
-4. Collect free-form answers.
-5. Pass answers to `RiskInterviewAnalyzer`.
-6. Render `RiskInterviewResult`.
+4. Collect transaction conditions.
+5. Collect free-form answers.
+6. Pass transaction context and answers to `RiskInterviewAnalyzer`.
+7. Render `RiskInterviewResult`.
 
 ## Analyzer Workflow
 
@@ -38,13 +46,15 @@
 2. Check scenario-specific misunderstanding signals.
 3. Check core-risk understanding signals.
 4. Check repayment/loss burden signals.
-5. Produce grade and explanation.
+5. Check transaction amount against affordable repayment/loss.
+6. Produce grade and explanation.
 
 Suggested deterministic rules:
 
 - Revolving-credit answer says the bill disappears or is free: at least `위험`.
 - Card-loan answer ignores repayment, interest, overdue penalty, and credit impact: at least `위험`.
 - Investment answer says 30% loss would affect living expenses, debt repayment, or rent: `고위험`.
+- Transaction context using essential money or exceeding affordable loss/payment increases grade severity.
 - Answer correctly states deferral/fee or principal-loss risk: `안전` or `주의` depending on missing details.
 
 ## Codex Cloud Workflow

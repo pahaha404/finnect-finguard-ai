@@ -14,6 +14,7 @@ Prefer Codex Cloud for substantial future changes after this repository is conne
 
 - Cover four MVP scenarios: revolving credit, card loan, crypto, and surging stock.
 - Use plain Korean explanations suitable for financial beginners.
+- Collect transaction conditions before the interview and include them in grading.
 - Classify results into exactly: `안전`, `주의`, `위험`, `고위험`.
 - The UX must protect user autonomy: recommend reconsideration, cooling-off, counseling, or safer alternatives without shaming the user.
 - Do not represent the app as official financial advice.
