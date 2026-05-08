@@ -76,4 +76,4 @@ Build an Android MVP that simulates the pre-transaction safety check:
 - A beginner can complete a scenario-to-report flow without instructions.
 - Risk grades are explainable from the user's answers.
 - The MVP can later swap the local analyzer for a secure server-backed LLM analyzer.
-- `./gradlew test` and `./gradlew assembleDebug` pass in Codex Cloud.
+- `./gradlew test`, `./gradlew assembleDebug`, and Android test APK compilation pass in the target build environment.

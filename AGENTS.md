@@ -6,9 +6,9 @@ Build FinGuard AI as a Kotlin/Jetpack Compose Android MVP based on `FINNECT_FinG
 
 FinGuard AI is not a blocking service. It helps users understand risky financial transactions before they choose to proceed.
 
-## Cloud Execution Rule
+## Execution Rule
 
-Primary implementation must run in Codex Cloud after this repository is connected to a GitHub-backed Codex Cloud environment. If Codex Cloud is not available, stop implementation work, report the blocker, and provide exact remediation steps.
+Prefer Codex Cloud for substantial future changes after this repository is connected to a GitHub-backed Codex Cloud environment. If Cloud is unavailable, report the blocker and exact remediation steps. Local implementation is acceptable only when the user explicitly asks to proceed locally.
 
 ## Product Rules
 
@@ -43,6 +43,8 @@ Run and keep passing:
 ./gradlew test
 ./gradlew assembleDebug
 ```
+
+On this Windows workstation, use `gradlew.bat` with `JAVA_HOME` set to Android Studio JBR and `ANDROID_HOME` set to `C:\Users\1\AppData\Local\Android\Sdk`.
 
 Minimum domain tests:
 

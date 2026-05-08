@@ -69,9 +69,16 @@ Suggested deterministic rules:
    - Run `./gradlew assembleDebug`.
    - Apply Cloud diff locally only after review.
 
+Current status:
+
+- The repo has been created and pushed as `pahaha404/finnect-finguard-ai`.
+- Codex CLI authentication works when run outside the sandbox.
+- A Codex Cloud environment for `pahaha404/finnect-finguard-ai` was not found, so the MVP was implemented locally after user approval.
+
 ## Failure Handling
 
 - If Codex CLI is not logged in, stop and run `codex login`.
 - If GitHub CLI token is invalid, stop and run `gh auth login -h github.com`.
 - If no cloud environment exists, create one in ChatGPT Codex settings before implementation.
 - If Android SDK is missing in Cloud, update environment setup and retry the Cloud task.
+- If the user explicitly approves local fallback, use the local Android SDK and Gradle wrapper, then record the Cloud blocker in `README.md`.

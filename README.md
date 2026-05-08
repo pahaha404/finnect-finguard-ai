@@ -11,7 +11,7 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 - `docs/WORKFLOW.md`: user, app, and Codex Cloud workflows.
 - `docs/CODEX_CLOUD_TASK.md`: prompt to submit after Codex Cloud is ready.
 
-## Target MVP
+## Implemented MVP
 
 - Scenario selection: revolving credit, card loan, crypto, and surging stock.
 - Plain-language risk explanation before each decision.
@@ -19,7 +19,7 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 - Understanding/risk classification: `안전`, `주의`, `위험`, `고위험`.
 - Result report with misunderstood concepts, risk factors, and alternative actions.
 
-## Recommended Android Stack
+## Android Stack
 
 - Kotlin
 - Jetpack Compose
@@ -29,9 +29,22 @@ The initial product target is a native Android app built with Kotlin and Jetpack
 - Unit tests for analyzer behavior
 - Compose UI smoke test for the main scenario-to-report flow
 
-## Codex Cloud First
+## Project Layout
 
-This repository is prepared for Codex Cloud execution. Do not implement the Android MVP locally until the repository is connected to a Codex Cloud environment.
+- `app/src/main/java/com/finnect/finguard/domain`: scenarios, interview models, `RiskInterviewAnalyzer`, and local deterministic analyzer.
+- `app/src/main/java/com/finnect/finguard/ui`: Compose screens and UI state owner.
+- `app/src/test`: analyzer unit tests.
+- `app/src/androidTest`: Compose smoke test.
+
+## Codex Cloud Status
+
+This repository was pushed to the private GitHub repo `pahaha404/finnect-finguard-ai`. Codex CLI login works, but the Cloud environment for this new repo was not found when tested with:
+
+```powershell
+codex cloud exec --env 'pahaha404/finnect-finguard-ai' --branch main '...'
+```
+
+The MVP was therefore implemented locally after explicit user direction. To move future work back to Codex Cloud, create a Codex Cloud environment for the GitHub repo in ChatGPT Codex settings, then submit `docs/CODEX_CLOUD_TASK.md`.
 
 Required setup:
 
@@ -53,7 +66,7 @@ Required setup:
    gh auth login -h github.com
    ```
 
-3. Create a private GitHub repo and push this folder:
+3. If needed, create and push the private GitHub repo:
 
    ```powershell
    gh repo create finnect-finguard-ai --private --source . --remote origin --push
@@ -69,7 +82,19 @@ Required setup:
 
 ## Verification
 
-Once the Cloud task creates the Android project, expected verification commands are:
+On Windows, this project was verified with:
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:ANDROID_HOME='C:\Users\1\AppData\Local\Android\Sdk'
+$env:ANDROID_SDK_ROOT='C:\Users\1\AppData\Local\Android\Sdk'
+$env:GRADLE_USER_HOME='C:\Users\1\.gradle'
+.\gradlew.bat test --no-daemon
+.\gradlew.bat assembleDebug --no-daemon
+.\gradlew.bat assembleDebugAndroidTest --no-daemon
+```
+
+On Codex Cloud or Linux:
 
 ```bash
 ./gradlew test
